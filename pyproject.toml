@@ -1,0 +1,52 @@
+[project]
+name = "myapp"
+version = "0.1.0"
+authors = [{ name = "istrainovic", email = "istrainovic@student.tgm.ac.at" }]
+requires-python = ">=3.11"
+description = "A sample project"
+readme = "README.md"
+dependencies = [
+    "pydantic>=2.0",
+    "gradio>=4.0"
+]
+
+[project.optional-dependencies]
+# Optional groups (e.g. dev tools)
+dev = [
+    "mypy>=1.0",
+    "build>=1.2",
+    "pyinstaller>=6.0",
+    "black>=23.0",
+    "ruff>=0.0",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["myapp*"]  # optional but nice
+
+[tool.setuptools.package-data]
+"myapp" = ["py.typed"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.black]
+line-length = 120
+target-version = ["py310"]
+include = "\\.pyi?$"
+
+[tool.ruff]
+line-length = 120
+select = ["E", "F", "W", "C", "Q"]
+exclude = ["__pycache__", "build", "dist"]
+
+[tool.mypy]
+files = ["src/myapp"]
+mypy_path = "src"
+explicit_package_bases = true
+check_untyped_defs = true
+python_version = "3.11"

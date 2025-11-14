@@ -27,3 +27,9 @@
 Zum Testen des Models:
 ```bash
 python src/coin_trol/main.py
+
+## Schnittstellenanalyse (Week 2)
+Die Verbindung zwischen Model, Controller und View wurde dokumentiert.
+Ivan: Datenmodell & Schnittstellenfunktionen
+Aleksej: Steuerlogik zwischen Schichten
+Gabriel: Darstellung (UI, Dummy-Screens)

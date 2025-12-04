@@ -1,51 +1,64 @@
-"""
-ui_login.py
------------
-Dummy-Login-View für das MVP.
-Simuliert einen Login-Prozess und liefert eine Test-User-ID.
-"""
-
-from typing import Final
+# ui_login.py
+import customtkinter as ctk
+from tkinter import messagebox
 
 
-# Konstanten
-DEFAULT_DUMMY_USERNAME: Final[str] = "testuser"
-DEFAULT_DUMMY_PASSWORD: Final[str] = "1234"
-DEFAULT_DUMMY_USER_ID: Final[int] = 1
+class LoginWindow(ctk.CTk):
+    def __init__(self, on_login_success=None):
+        super().__init__()
+
+        # Falls Datei direkt gestartet wird → Dummy-Funktion
+        if on_login_success is None:
+            on_login_success = self.default_login_success
+
+        self.on_login_success = on_login_success
+
+        self.title("CoinTrol – Login")
+        self.geometry("400x350")
+        ctk.set_appearance_mode("dark")
+        ctk.set_default_color_theme("blue")
+
+        # ---- Layout ----
+        frame = ctk.CTkFrame(self, corner_radius=15)
+        frame.pack(padx=30, pady=30, fill="both", expand=True)
+
+        title = ctk.CTkLabel(frame, text="Login", font=("Arial", 28))
+        title.pack(pady=(10, 20))
+
+        self.username_entry = ctk.CTkEntry(frame, placeholder_text="Benutzername")
+        self.username_entry.pack(pady=10)
+
+        self.password_entry = ctk.CTkEntry(frame, placeholder_text="Passwort", show="*")
+        self.password_entry.pack(pady=10)
+
+        login_btn = ctk.CTkButton(frame, text="Login", command=self.handle_login)
+        login_btn.pack(pady=20)
+
+    def handle_login(self):
+        username = self.username_entry.get()
+        password = self.password_entry.get()
+
+        if not username or not password:
+            messagebox.showerror("Fehler", "Bitte alle Felder ausfüllen.")
+            return
+
+        # Dummy check – später Controller ersetzen
+        if username == "test" and password == "1234":
+            self.destroy()
+            self.on_login_success(username)  # Übergibt Username an Dashboard
+        else:
+            messagebox.showerror("Fehler", "Falsche Login-Daten!")
+
+    def default_login_success(self, username):
+        """Wird benutzt, wenn ui_login.py direkt gestartet wird."""
+        print(f"Login erfolgreich! (User: {username})")
+        print("Aber kein Dashboard definiert.")
+        print("Starte stattdessen nur Login Testmodus.")
 
 
-def get_user_id_by_login(username: str, password: str) -> int:
-    """
-    Returns a dummy user ID for testing purposes.
-
-    Args:
-        username (str): The username entered.
-        password (str): The password entered.
-
-    Returns:
-        int: Dummy user ID.
-    """
-    # TODO: Replace with real controller logic
-    print("(Dummy-Controller) Login checked")
-    return DEFAULT_DUMMY_USER_ID
-
-
-def login_screen() -> int:
-    """
-    Displays the login screen and returns a dummy user ID.
-
-    Returns:
-        int: The logged-in user ID.
-    """
-    print("\n====== LOGIN ======\n")
-
-    username = DEFAULT_DUMMY_USERNAME
-    password = DEFAULT_DUMMY_PASSWORD
-
-    print(f"Username: {username}")
-    print("Password: ****")
-
-    user_id = get_user_id_by_login(username, password)
-
-    print(f"\nLogin successful! (User-ID: {user_id})\n")
-    return user_id
+# -------------------------------------------------
+#   DIREKT AUSBAR — Nur zu Testzwecken!
+# -------------------------------------------------
+if __name__ == "__main__":
+    app = LoginWindow()
+    app.mainloop()

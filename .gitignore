@@ -34,3 +34,6 @@ htmlcov/
 # ---- Environment & Secrets ----
 .env
 .env.local
+
+__pycache__/
+.vscode/

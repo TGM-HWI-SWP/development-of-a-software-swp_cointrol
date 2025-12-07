@@ -5,7 +5,7 @@ Dummy-Login-View für das MVP (Woche 2–4).
 Simuliert einen Login-Prozess und liefert eine Test-User-ID zurück.
 """
 
-from typing import Final
+from typing import Finalgit
 
 # -------------------------------------------------
 # Konstanten

@@ -1,57 +1,59 @@
 """
 main.py
 -------
-Startpunkt des CoinTrol-Projekts (MVP-Durchstich).
-Simuliert den Programmfluss von Login → Controller → Model → View.
+Startpunkt der Anwendung (MVP).
+Führt den Login-Prozess aus und öffnet anschließend das Dashboard.
 """
 
-from view.ui_login import login_screen
-from view.ui_dashboard import show_dashboard
-from controller.main_controller import (
-    get_wallets_by_user,
-    get_transactions_by_wallet,
-    add_transaction,
-    calculate_wallet_balance,
-)
+import sys
+from PyQt6.QtWidgets import QApplication
+
+# GUI-Module (View)
+from coin_trol.view.ui_login import LoginWindow
+from coin_trol.view.ui_dashboard import DashboardWindow
 
 
-def main() -> None:
-    """
-    Startet den MVP-Testablauf:
-    - Dummy-Login
-    - Abrufen von Wallets
-    - Anzeigen der Transaktionen
-    - Hinzufügen einer Beispiel-Transaktion
-    - Berechnung des aktuellen Kontostands
-    """
-    print("\n===== COINTROL MVP START =====\n")
+# ------------------------------------------------------------
+# HAUPTANWENDUNG
+# ------------------------------------------------------------
+class CoinTrolApp:
+    def __init__(self):
+        self.app = QApplication(sys.argv)
+        self.login_window = None
+        self.dashboard_window = None
+        self.logged_in_user_id = None  # <-- speichert User-ID nach Login
 
-    # Dummy Login (Gabriels View)
-    user_id = login_screen()
+    def start_login(self):
+        """Zeigt das Login-Fenster an."""
+        from coin_trol.controller.main_controller import login  # lazy import, um zyklische Abhängigkeiten zu vermeiden
 
-    # Controller ruft Wallets ab
-    wallets = get_wallets_by_user(user_id)
-    print(f"Wallets von Benutzer {user_id}: {wallets}")
+        # LoginWindow erwartet Callback mit (username, user_id)
+        self.login_window = LoginWindow(on_login_success=self.start_dashboard)
+        self.login_window.show()
 
-    # Controller ruft Transaktionen ab
-    if wallets:
-        wallet_id = wallets[0].wallet_id
-        txs = get_transactions_by_wallet(wallet_id)
-        print(f"Transaktionen für Wallet {wallet_id}: {txs}")
+    def start_dashboard(self, username: str, user_id: str):
+        """Öffnet das Dashboard nach erfolgreichem Login."""
+        self.logged_in_user_id = user_id  # <-- speichere User-ID global
+        if self.login_window:
+            self.login_window.close()
 
-        # Neue Dummy-Transaktion hinzufügen
-        add_transaction(wallet_id, -12.50, "Coffee", "Morning Latte")
-        print("Neue Transaktion hinzugefügt!")
+        # Dashboard bekommt sowohl username als auch user_id
+        self.dashboard_window = DashboardWindow(
+            username=username,
+            user_id=user_id,
+            on_logout=self.start_login
+        )
+        self.dashboard_window.show()
 
-        # Kontostand berechnen
-        balance = calculate_wallet_balance(wallet_id)
-        print(f"Aktueller Kontostand: {balance:.2f} €")
-
-    # Dummy-Dashboard anzeigen (Gabriel)
-    show_dashboard(user_id)
-
-    print("\n===== MVP-DURCHSTICH BEENDET =====\n")
+    def run(self):
+        """Startet die Anwendung."""
+        self.start_login()
+        sys.exit(self.app.exec())
 
 
+# ------------------------------------------------------------
+# PROGRAMMSTART
+# ------------------------------------------------------------
 if __name__ == "__main__":
-    main()
+    app = CoinTrolApp()
+    app.run()

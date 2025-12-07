@@ -1,436 +1,354 @@
 from PyQt6.QtWidgets import (
-    QWidget, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton,
-    QComboBox, QApplication, QScrollArea, QFrame, QGridLayout, QDialog
-)  # PyQt6-Widgets: Fenster, Layouts, Eingabefelder, Buttons, Scroll-Bereiche, Dialoge
-from PyQt6.QtGui import QFont, QColor, QPalette  # GUI: Schriftarten, Farben, Hintergrund-Paletten
-from PyQt6.QtCore import Qt                      # Qt-Basisfunktionen, z. B. Alignments
-import sys                                       # Systemfunktionen für Start/Beenden der Anwendung
-import datetime                                  # Für Datum-Auswahl (Tag/Monat/Jahr)
+    QWidget, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit,
+    QPushButton, QComboBox, QScrollArea, QFrame, QMessageBox, QDialog
+)
+from PyQt6.QtGui import QFont, QColor, QPalette
+from PyQt6.QtCore import Qt
+import datetime
+
+from coin_trol.model.db_interface import (
+    get_transactions_by_wallet,
+    add_transaction,
+    delete_transaction,
+    update_wallet_balance
+)
 
 
-
-# ------------------------------------------------------------
-# Hover-Effekt
-# ------------------------------------------------------------
-def apply_hover(button, normal_color, hover_color):  # Funktion, die Hover-Effekt für Buttons erzeugt
-    button.setStyleSheet(f"""
-        QPushButton {{
-            background-color: {normal_color};
-            color: white;
-            border-radius: 10px;
-            font-size: 16px;
-            padding: 8px;
-        }}
-    """)  # Setzt den normalen Button-Style
-
-    def enterEvent(event):  # Wird ausgeführt, wenn Maus über den Button fährt
-        button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {hover_color};
-                color: white;
-                border-radius: 10px;
-                font-size: 16px;
-                padding: 8px;
-            }}
-        """)  # Setzt Hover-Style
-
-    def leaveEvent(event):  # Wird ausgeführt, wenn Maus den Button verlässt
-        button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {normal_color};
-                color: white;
-                border-radius: 10px;
-                font-size: 16px;
-                padding: 8px;
-            }}
-        """)  # Setzt wieder normalen Style zurück
-
-    button.enterEvent = enterEvent  # Überschreibt das enterEvent des Buttons
-    button.leaveEvent = leaveEvent  # Überschreibt das leaveEvent des Buttons
-
-
-
-
-# ------------------------------------------------------------
-# TRANSAKTIONS-FENSTER
-# ------------------------------------------------------------
 class TransactionWindow(QWidget):
-    def __init__(self):
+    def __init__(self, wallet_id=None, dashboard_ref=None):
         super().__init__()
+        self.wallet_id = wallet_id
+        self.dashboard_ref = dashboard_ref  # Dashboard wird bei Änderungen neu geladen
+        self.setWindowTitle("CoinTrol – Transaktionen")
+        self.resize(1100, 700)
 
-        self.setWindowTitle("COINTROL – TRANSAKTIONEN")
-        self.resize(1200, 900)
-
+        # Hintergrundfarbe
         palette = self.palette()
-        palette.setColor(QPalette.ColorRole.Window, QColor("#111215"))
+        palette.setColor(QPalette.ColorRole.Window, QColor("#1C1C1E"))
         self.setPalette(palette)
 
-        self.transactions = []
-
-        main = QVBoxLayout(self)
-        main.setContentsMargins(30, 25, 30, 25)
-        main.setSpacing(20)
+        self.main = QVBoxLayout(self)
+        self.main.setContentsMargins(30, 30, 30, 30)
+        self.main.setSpacing(25)
 
         # ------------------------------------------------------------
-        # Titel
+        # TITEL
         # ------------------------------------------------------------
-        title = QLabel("TRANSAKTIONEN")
-        title.setFont(QFont("Arial Black", 38))
-        title.setStyleSheet("color: #5B5CF0;")
-        title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        main.addWidget(title)
+        title = QLabel("Transaktionen")
+        title.setFont(QFont("Arial Black", 34))
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setStyleSheet("color: #6D6EFA;")
+        self.main.addWidget(title)
 
         # ------------------------------------------------------------
-        # INPUT-KARTE
+        # EINGABELEISTE
         # ------------------------------------------------------------
-        card = QFrame()
-        card.setStyleSheet("background-color: #1A1B1F; border-radius: 16px;")
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(12, 12, 12, 12)
-        card_layout.setSpacing(10)
+        input_frame = QFrame()
+        input_layout = QHBoxLayout(input_frame)
+        input_layout.setSpacing(10)
 
-        # ============================================================
-        # REIHE 1: DATUM — BETRAG — WÄHRUNG
-        # ============================================================
-        row1 = QHBoxLayout()
-        row1.setSpacing(12)
+        # Datum
+        self.date_label = QLabel(datetime.datetime.now().strftime("%d.%m.%Y"))
+        self.date_label.setFont(QFont("Arial", 16))
+        self.date_label.setStyleSheet("color: white;")
+        input_layout.addWidget(self.date_label)
 
-        # ----------------- Datum -----------------
-        left_block = QHBoxLayout()
-        left_block.setSpacing(6)
-
-        self.day = QComboBox()  # Dropdown für den Tag
-        self.day.addItems([str(i) for i in range(1, 32)])  # Tage 1–31 einfügen
-        self.day.setFixedWidth(75)  # Breite des Tages-Dropdowns
-        self._style_combo(self.day)  # Einheitliches Styling für ComboBox
-        left_block.addWidget(self.day)  # In linken Block einfügen
-
-        self.month = QComboBox()  # Dropdown für den Monat
-        self.month.addItems([
-            "Jänner", "Februar", "März", "April", "Mai", "Juni",
-            "Juli", "August", "September", "Oktober", "November", "Dezember"
-        ])  # Monatsnamen einfügen
-        self.month.setFixedWidth(140)  # Breite des Monats-Dropdowns
-        self._style_combo(self.month)  # Styling anwenden
-        left_block.addWidget(self.month)  # In linken Block einfügen
-
-        year_now = datetime.datetime.now().year  # Aktuelles Jahr ermitteln
-        self.year = QComboBox()  # Dropdown für Jahr
-        self.year.addItems([str(year_now - 1), str(year_now), str(year_now + 1)])  # Vorjahr, aktuelles Jahr, nächstes Jahr
-        self.year.setFixedWidth(100)  # Breite des Jahres-Dropdowns
-        self._style_combo(self.year)  # Styling anwenden
-        left_block.addWidget(self.year)  # In linken Block einfügen
-
-
-        row1.addLayout(left_block)
-        row1.addStretch()
-
-        # ----------------- Betrag -----------------
-        middle_block = QHBoxLayout()
-        middle_block.setSpacing(5)
-
+        # Euro / Cent Felder
         self.euro_input = QLineEdit()
         self.euro_input.setPlaceholderText("Euro")
-        self.euro_input.setFixedWidth(100)
         self._style_input(self.euro_input)
-        middle_block.addWidget(self.euro_input)
+        input_layout.addWidget(self.euro_input)
 
         self.cent_input = QLineEdit()
         self.cent_input.setPlaceholderText("Cent")
-        self.cent_input.setFixedWidth(60)
         self._style_input(self.cent_input)
-        middle_block.addWidget(self.cent_input)
+        input_layout.addWidget(self.cent_input)
 
-        row1.addLayout(middle_block)
-        row1.addStretch()
+        # Richtung: Einnahme / Ausgabe
+        self.direction_box = QComboBox()
+        self.direction_box.addItems(["Ausgabe (-)", "Einnahme (+)"])
+        self.direction_box.setStyleSheet("""
+            QComboBox {
+                background-color: #2E2E36;
+                color: white;
+                border-radius: 6px;
+                padding: 6px;
+                font-size: 16px;
+            }
+        """)
+        input_layout.addWidget(self.direction_box)
 
-        # ----------------- Währung -----------------
-        right_block = QHBoxLayout()
+        # Kategorie
+        self.category = QComboBox()
+        self.category.addItems(["Lebensmittel", "Transport", "Freizeit", "Sonstiges"])
+        self.category.setStyleSheet("""
+            QComboBox {
+                background-color: #2E2E36;
+                color: white;
+                border-radius: 6px;
+                padding: 6px;
+                font-size: 16px;
+            }
+        """)
+        input_layout.addWidget(self.category)
 
-        self.currency = QComboBox()
-        self.currency.addItems(["EUR", "USD", "CHF", "GBP"])
-        self.currency.setFixedWidth(95)
-        self._style_combo(self.currency)
-        right_block.addWidget(self.currency)
+        # Währung
+        self.currency_box = QComboBox()
+        self.currency_box.addItems(["EUR", "USD", "RSD", "CHF"])
+        self.currency_box.setStyleSheet("""
+            QComboBox {
+                background-color: #2E2E36;
+                color: white;
+                border-radius: 6px;
+                padding: 6px;
+                font-size: 16px;
+            }
+        """)
+        input_layout.addWidget(self.currency_box)
 
-        row1.addLayout(right_block)
-        card_layout.addLayout(row1)
+        # Beschreibung
+        self.desc_input = QLineEdit()
+        self.desc_input.setPlaceholderText("Beschreibung (z. B. McDonalds, Tankstelle, etc.)")
+        self._style_input(self.desc_input)
+        input_layout.addWidget(self.desc_input)
 
-        # ============================================================
-        # REIHE 2: Beschreibung + Zweck
-        # ============================================================
-        row2 = QHBoxLayout()
-        row2.setSpacing(8)
-
-        self.description = QLineEdit()
-        self.description.setPlaceholderText("Beschreibung")
-        self.description.setFixedWidth(280)
-        self._style_input(self.description)
-        row2.addWidget(self.description)
-
-        self.purpose = QComboBox()
-        self.purpose.addItems([
-            "Lebensmittel", "Privat", "Transport", "Freizeit",
-            "Fixkosten", "Sparen", "Sonstiges"
-        ])
-        self.purpose.setFixedWidth(180)
-        self._style_combo(self.purpose)
-        row2.addWidget(self.purpose)
-
-        row2.addStretch()
-        card_layout.addLayout(row2)
-
-        # ============================================================
-        # HINZUFÜGEN BUTTON
-        # ============================================================
-        add_btn = QPushButton("TRANSAKTION HINZUFÜGEN")
-        apply_hover(add_btn, "#2968FF", "#3A7BFF")
-        add_btn.setFixedHeight(42)
+        # Button – hinzufügen
+        add_btn = QPushButton("Transaktion hinzufügen")
+        add_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #5B5CF0;
+                color: white;
+                border-radius: 8px;
+                padding: 10px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background-color: #6D6EFA;
+            }
+        """)
         add_btn.clicked.connect(self.add_transaction)
-        card_layout.addWidget(add_btn)
+        input_layout.addWidget(add_btn)
 
-        main.addWidget(card)
+        self.main.addWidget(input_frame)
 
         # ------------------------------------------------------------
-        # SCROLL-BEREICH
+        # TRANSAKTIONSLISTE (Scroll)
         # ------------------------------------------------------------
-        self.scroll_area = QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setStyleSheet("border: none;")
+        self.main.addWidget(self.scroll)
 
-        self.scroll_widget = QWidget()
-        self.scroll_layout = QVBoxLayout(self.scroll_widget)
-        self.scroll_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.content = QWidget()
+        self.scroll.setWidget(self.content)
+        self.list_layout = QVBoxLayout(self.content)
+        self.list_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.list_layout.setSpacing(15)
 
-        self.scroll_area.setWidget(self.scroll_widget)
-        main.addWidget(self.scroll_area)
+        self.load_transactions()
 
+    # ------------------------------------------------------------
+    # TRANSAKTION HINZUFÜGEN
+    # ------------------------------------------------------------
+    def add_transaction(self):
+        if not self.wallet_id:
+            QMessageBox.warning(self, "Fehler", "Keine Wallet-ID übergeben.")
+            return
 
+        euro = self.euro_input.text().strip() or "0"
+        cent = self.cent_input.text().strip() or "0"
+        try:
+            amount = float(euro) + float(cent) / 100
+        except ValueError:
+            QMessageBox.warning(self, "Fehler", "Ungültiger Betrag.")
+            return
 
-    # ============================================================
-    # Styling
-    # ============================================================
+        # Richtung
+        direction = self.direction_box.currentText()
+        if "Ausgabe" in direction:
+            amount = -abs(amount)
+        else:
+            amount = abs(amount)
+
+        category = self.category.currentText()
+        currency = self.currency_box.currentText()
+        desc = self.desc_input.text().strip() or "Keine Beschreibung"
+
+        add_transaction(self.wallet_id, amount, category, desc, currency)
+        update_wallet_balance(self.wallet_id)
+        if self.dashboard_ref:
+            self.dashboard_ref.load_dashboard("#3A3A42")
+
+        QMessageBox.information(self, "Erfolg", "Transaktion gespeichert.")
+        self.load_transactions()
+
+    # ------------------------------------------------------------
+    # TRANSAKTIONEN LADEN UND ANZEIGEN
+    # ------------------------------------------------------------
+    def load_transactions(self):
+        for i in reversed(range(self.list_layout.count())):
+            self.list_layout.itemAt(i).widget().setParent(None)
+
+        transactions = get_transactions_by_wallet(self.wallet_id)
+        if not transactions:
+            lbl = QLabel("Noch keine Transaktionen vorhanden.")
+            lbl.setStyleSheet("color: #AAAAAA; font-size: 20px;")
+            self.list_layout.addWidget(lbl)
+            return
+
+        for t in transactions:
+            frame = QFrame()
+            frame.setStyleSheet("background-color: #2E2E36; border-radius: 12px;")
+            lay = QHBoxLayout(frame)
+            lay.setContentsMargins(15, 10, 15, 10)
+
+            sign = "+" if t["amount"] > 0 else "-"
+            color = "#47E47B" if t["amount"] > 0 else "#E45757"
+            text = QLabel(f"{sign}{abs(t['amount']):.2f} {t.get('currency','EUR')} – {t['category']} – {t.get('description','')}")
+            text.setStyleSheet(f"color: {color}; font-size: 18px;")
+            lay.addWidget(text)
+
+            edit_btn = QPushButton("Ändern")
+            edit_btn.setStyleSheet("background-color: #3A3A48; color: white; border-radius: 6px; padding: 6px;")
+            edit_btn.clicked.connect(lambda _, tid=t["_id"]: self.edit_transaction(tid))
+            lay.addWidget(edit_btn)
+
+            del_btn = QPushButton("Löschen")
+            del_btn.setStyleSheet("background-color: #C13535; color: white; border-radius: 6px; padding: 6px;")
+            del_btn.clicked.connect(lambda _, tid=t["_id"]: self.delete_transaction(tid))
+            lay.addWidget(del_btn)
+
+            self.list_layout.addWidget(frame)
+
+    # ------------------------------------------------------------
+    # TRANSAKTION ÄNDERN (Popup)
+    # ------------------------------------------------------------
+    def edit_transaction(self, trans_id):
+        transactions = get_transactions_by_wallet(self.wallet_id)
+        trans = next((t for t in transactions if str(t["_id"]) == str(trans_id)), None)
+        if not trans:
+            QMessageBox.warning(self, "Fehler", "Transaktion nicht gefunden.")
+            return
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Transaktion bearbeiten")
+        dialog.resize(400, 340)
+        layout = QVBoxLayout(dialog)
+        layout.setSpacing(10)
+
+        # Eingabefelder
+        euro_input = QLineEdit(str(abs(int(trans["amount"]))))
+        cent_input = QLineEdit("0")
+        self._style_input(euro_input)
+        self._style_input(cent_input)
+
+        dir_box = QComboBox()
+        dir_box.addItems(["Ausgabe (-)", "Einnahme (+)"])
+        dir_box.setCurrentIndex(1 if trans["amount"] > 0 else 0)
+
+        cat_box = QComboBox()
+        cat_box.addItems(["Lebensmittel", "Transport", "Freizeit", "Sonstiges"])
+        cat_box.setCurrentText(trans.get("category", "Sonstiges"))
+
+        curr_box = QComboBox()
+        curr_box.addItems(["EUR", "USD", "RSD", "CHF", "GBP"])
+        curr_box.setCurrentText(trans.get("currency", "EUR"))
+
+        desc_input = QLineEdit(trans.get("description", ""))
+        desc_input.setPlaceholderText("Beschreibung")
+        self._style_input(desc_input)
+
+        h1 = QHBoxLayout()
+        h1.addWidget(euro_input)
+        h1.addWidget(cent_input)
+        layout.addLayout(h1)
+        layout.addWidget(dir_box)
+        layout.addWidget(cat_box)
+        layout.addWidget(curr_box)
+        layout.addWidget(desc_input)
+
+        save_btn = QPushButton("Speichern")
+        save_btn.setStyleSheet("background-color: #5B5CF0; color: white; border-radius: 8px; padding: 8px;")
+        cancel_btn = QPushButton("Abbrechen")
+        cancel_btn.setStyleSheet("background-color: #3A3A48; color: white; border-radius: 8px; padding: 8px;")
+
+        layout.addWidget(save_btn)
+        layout.addWidget(cancel_btn)
+
+        def save_changes():
+            try:
+                euro = float(euro_input.text() or "0")
+                cent = float(cent_input.text() or "0")
+                amount = euro + cent / 100
+                if "Ausgabe" in dir_box.currentText():
+                    amount = -abs(amount)
+                else:
+                    amount = abs(amount)
+
+                from coin_trol.model.db_interface import transactions_col
+                transactions_col.update_one(
+                    {"_id": trans["_id"]},
+                    {"$set": {
+                        "amount": amount,
+                        "category": cat_box.currentText(),
+                        "currency": curr_box.currentText(),
+                        "description": desc_input.text().strip() or "Keine Beschreibung"
+                    }}
+                )
+                update_wallet_balance(self.wallet_id)
+                if self.dashboard_ref:
+                    self.dashboard_ref.load_dashboard("#3A3A42")
+
+                dialog.accept()
+                self.load_transactions()
+            except Exception as e:
+                QMessageBox.critical(self, "Fehler", f"Änderung fehlgeschlagen:\n{e}")
+
+        save_btn.clicked.connect(save_changes)
+        cancel_btn.clicked.connect(dialog.reject)
+        dialog.exec()
+
+    # ------------------------------------------------------------
+    # TRANSAKTION LÖSCHEN
+    # ------------------------------------------------------------
+    def delete_transaction(self, trans_id):
+        reply = QMessageBox.question(
+            self, "Löschen", "Transaktion wirklich löschen?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            delete_transaction(str(trans_id))
+            update_wallet_balance(self.wallet_id)
+            if self.dashboard_ref:
+                self.dashboard_ref.load_dashboard("#3A3A42")
+            self.load_transactions()
+
+    # ------------------------------------------------------------
+    # STYLE-HILFSMETHODE
+    # ------------------------------------------------------------
     def _style_input(self, widget):
-        widget.setFixedHeight(40)
+        widget.setFixedHeight(44)
         widget.setStyleSheet("""
             QLineEdit {
-                background-color: #2B2C31;
+                background-color: #2E2E36;
                 color: white;
                 border-radius: 8px;
                 padding-left: 12px;
-                font-size: 16px;
+                font-size: 17px;
+                min-width: 100px;
             }
         """)
-
-    def _style_combo(self, combo):
-        combo.setFixedHeight(40)
-        combo.setStyleSheet("""
-            QComboBox {
-                background-color: #2B2C31;
-                color: white;
-                border-radius: 8px;
-                padding-left: 10px;
-                font-size: 16px;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #1A1B1F;
-                color: white;
-            }
-        """)
-
-
-    # ============================================================
-    # TRANSAKTION HINZUFÜGEN
-    # ============================================================
-    def add_transaction(self):
-        euro = self.euro_input.text()
-        cent = self.cent_input.text()
-        desc = self.description.text()
-
-        if not euro.isdigit() or not cent.isdigit() or desc.strip() == "":  # Prüft: Euro und Cent müssen Zahlen sein, Beschreibung darf nicht leer sein
-            return  # Wenn ungültig → Vorgang abbrechen
-
-
-        amount = float(f"{euro}.{cent}")
-
-        t = {
-            "amount": amount,  # Betrag (Euro + Cent als Float)
-            "currency": self.currency.currentText(),  # Gewählte Währung
-            "description": desc,  # Beschreibungstext der Transaktion
-            "purpose": self.purpose.currentText(),  # Gewählter Zweck/Kategorie
-            "day": self.day.currentText(),  # Ausgewählter Tag
-            "month": self.month.currentText(),  # Ausgewählter Monat
-            "year": self.year.currentText()  # Ausgewähltes Jahr
-        }  
-
-
-        self.transactions.append(t)
-        self.refresh_list()
-
-        self.euro_input.clear()
-        self.cent_input.clear()
-        self.description.clear()
-
-
-
-    # ============================================================
-    # LISTE ANZEIGEN
-    # ============================================================
-    def refresh_list(self):  # Aktualisiert die komplette Transaktionsliste im Scroll-Bereich
-        for i in reversed(range(self.scroll_layout.count())):  # Alle bestehenden Widgets rückwärts durchgehen
-            # reversed: löscht Widgets von hinten nach vorne, damit die Indexe nicht verrutschen
-            self.scroll_layout.itemAt(i).widget().deleteLater()  # Widget löschen, um die Liste zu leeren
-
-
-        for t in self.transactions:  # Jede gespeicherte Transaktion durchgehen
-            card = QFrame()  # Eine neue Karten-Box für die Transaktion
-            card.setStyleSheet("background-color: #2F3038; border-radius: 12px;")  # Optische Gestaltung der Karte
-            card_layout = QGridLayout(card)  # Rasterlayout für die Inhalte der Karte
-            card_layout.setContentsMargins(16, 16, 16, 16)  # Innenabstand der Karte
-
-            lbl_amount = QLabel(f"{t['amount']:.2f} {t['currency']}")  # Betrag + Währung anzeigen
-            lbl_amount.setFont(QFont("Arial Black", 22))  # Große Schrift für Betrag
-            lbl_amount.setStyleSheet("color: white;")  # Weißer Text
-            card_layout.addWidget(lbl_amount, 0, 0)  # Position oben links
-
-            lbl_date = QLabel(f"{t['day']}. {t['month']} {t['year']}")  # Datum anzeigen
-            lbl_date.setFont(QFont("Arial", 14))  # Kleinere Schrift
-            lbl_date.setStyleSheet("color: #8A8B99;")  # Dezente graue Farbe
-            card_layout.addWidget(lbl_date, 0, 1)  # Position oben rechts
-
-            lbl_purpose = QLabel(f"Zweck: {t['purpose']}")  # Zweck/Kategorie anzeigen
-            lbl_purpose.setFont(QFont("Arial Black", 16))  # Mittelgroße Schrift
-            lbl_purpose.setStyleSheet("color: #5B5CF0;")  # Blaue Akzentfarbe
-            card_layout.addWidget(lbl_purpose, 1, 0)  # Unter dem Betrag
-
-            lbl_desc = QLabel(t["description"])  # Beschreibungstext anzeigen
-            lbl_desc.setFont(QFont("Arial", 14))  # Normale Schriftgröße
-            lbl_desc.setStyleSheet("color: #CFCFCF;")  # Helles Grau für gute Lesbarkeit
-            card_layout.addWidget(lbl_desc, 2, 0)  # Unter dem Zweck
-
-
-            # ÄNDERN BUTTON
-            edit_btn = QPushButton("ÄNDERN")  # Button zum Bearbeiten einer Transaktion
-            edit_btn.setFixedWidth(95)  # Feste Breite für ein einheitliches Layout
-            apply_hover(edit_btn, "#4A4EE8", "#6A6CFF")  # Hover-Effekt hinzufügen
-            edit_btn.clicked.connect(lambda event, tr=t: self.edit_transaction(tr))  # Beim Klicken spezifische Transaktion bearbeiten
-            card_layout.addWidget(edit_btn, 0, 2)  # Button oben rechts in die Karte einfügen
-
-            # LÖSCHEN BUTTON
-            del_btn = QPushButton("LÖSCHEN")  # Button zum Löschen der Transaktion
-            del_btn.setFixedWidth(95)  # Feste Breite
-            apply_hover(del_btn, "#B12E2E", "#D93838")  # Hover-Effekt für roten Button
-            del_btn.clicked.connect(lambda event, tr=t: self.delete_transaction(tr))  # Beim Klicken diese Transaktion löschen
-            card_layout.addWidget(del_btn, 1, 2)  # Löschen-Button unter Edit-Button
-
-            self.scroll_layout.addWidget(card)  # Die fertige Transaktionskarte zur Scroll-Liste hinzufügen
-
-
-
-
-    # ============================================================
-    # EDIT (inkl. DATUM!)
-    # ============================================================
-    def edit_transaction(self, t):
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Transaktion bearbeiten")
-        dialog.resize(420, 520)
-
-        v = QVBoxLayout(dialog)
-        v.setSpacing(12)
-
-        # ------------------ DATUM ------------------
-        date_row = QHBoxLayout()
-
-        day_edit = QComboBox()
-        day_edit.addItems([str(i) for i in range(1, 32)])
-        day_edit.setCurrentText(t["day"])
-        self._style_combo(day_edit)
-        date_row.addWidget(day_edit)
-
-        month_edit = QComboBox()
-        month_edit.addItems([
-            "Jänner", "Februar", "März", "April", "Mai", "Juni",
-            "Juli", "August", "September", "Oktober", "November", "Dezember"
-        ])
-        month_edit.setCurrentText(t["month"])
-        self._style_combo(month_edit)
-        date_row.addWidget(month_edit)
-
-        year_now = datetime.datetime.now().year
-        year_edit = QComboBox()
-        year_edit.addItems([str(year_now - 1), str(year_now), str(year_now + 1)])
-        year_edit.setCurrentText(t["year"])
-        self._style_combo(year_edit)
-        date_row.addWidget(year_edit)
-
-        v.addLayout(date_row)
-
-        # ------------------ Betrag ------------------
-        euro = QLineEdit()
-        cent = QLineEdit()
-
-        euro.setText(str(int(t["amount"])))
-        cent.setText(str(int((t["amount"] % 1) * 100)).zfill(2)) # mit zfill(2) auf 2 Stellen auffüllen
-
-        self._style_input(euro)
-        self._style_input(cent)
-
-        v.addWidget(euro)
-        v.addWidget(cent)
-
-        # ------------------ Beschreibung ------------------
-        desc = QLineEdit()
-        desc.setText(t["description"])
-        self._style_input(desc)
-        v.addWidget(desc)
-
-        # ------------------ Zweck ------------------
-        purpose_combo = QComboBox()
-        purpose_combo.addItems([
-            "Lebensmittel", "Privat", "Transport", "Freizeit",
-            "Fixkosten", "Sparen", "Sonstiges"
-        ])
-        purpose_combo.setCurrentText(t["purpose"])
-        self._style_combo(purpose_combo)
-        v.addWidget(purpose_combo)
-
-        # ------------------ Speichern Button ------------------
-        save_btn = QPushButton("Speichern")
-        apply_hover(save_btn, "#2968FF", "#3A7BFF")
-        v.addWidget(save_btn)
-
-        def save():
-            if euro.text().isdigit() and cent.text().isdigit():
-                t["amount"] = float(f"{euro.text()}.{cent.text()}")
-                t["description"] = desc.text()
-                t["purpose"] = purpose_combo.currentText()
-                t["day"] = day_edit.currentText()
-                t["month"] = month_edit.currentText()
-                t["year"] = year_edit.currentText()
-
-                self.refresh_list()
-                dialog.close()
-
-        save_btn.clicked.connect(save)
-        dialog.exec()
-
-
-    # ============================================================
-    # DELETE
-    # ============================================================
-    def delete_transaction(self, t):
-        self.transactions.remove(t)
-        self.refresh_list()
-
-
-
-
-# ------------------------------------------------------------
-# START
-# ------------------------------------------------------------
-if __name__ == "__main__":  # Startpunkt, wenn die Datei direkt ausgeführt wird
-    app = QApplication(sys.argv)  # Erstellt die PyQt-Anwendung (verarbeitet Systemargumente)
-    win = TransactionWindow()  # Erstellt das Transaktionsfenster
-    win.show()  # Zeigt das Fenster auf dem Bildschirm an
-    sys.exit(app.exec())  # Startet die Event-Schleife und beendet sauber bei Programmende
+    
+    # ------------------------------------------------------------
+    # Wenn das Fenster geschlossen wird
+    # ------------------------------------------------------------
+    def closeEvent(self, event):
+        """Aktualisiert Dashboard automatisch beim Schließen."""
+        if self.dashboard_ref:
+            print("[Transaktion] Fenster geschlossen → Dashboard wird aktualisiert...")
+            try:
+                self.dashboard_ref.load_dashboard("#3A3A42")
+            except Exception as e:
+                print(f"[Transaktion] Dashboard-Reload fehlgeschlagen: {e}")
+        event.accept()
 

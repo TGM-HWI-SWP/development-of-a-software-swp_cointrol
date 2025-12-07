@@ -1,78 +1,86 @@
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QLabel, QPushButton, QVBoxLayout,
-    QHBoxLayout, QGridLayout, QFrame
+    QHBoxLayout, QGridLayout, QFrame, QScrollArea
 )
 from PyQt6.QtGui import QFont, QColor, QPalette
 from PyQt6.QtCore import Qt
 import sys
 
-# WICHTIG: Importiere dein Transaktionsfenster
-from Transaktion import TransactionWindow   # Importiert das Fenster für Transaktionen
-from Wallets import WalletsWindow           # Importiert das Fenster für Wallets
+# ------------------------------------------------------------
+# IMPORTS AUS CONTROLLER UND VIEW
+# ------------------------------------------------------------
+from coin_trol.model.db_interface import (
+    get_wallets_by_user,
+    create_wallet,
+    calculate_wallet_balance,
+    get_transactions_by_wallet
+)
+from coin_trol.view.Transaktion import TransactionWindow
+from coin_trol.view.Wallets import WalletsWindow
 
 
+# ------------------------------------------------------------
+# DASHBOARD-FENSTER
+# ------------------------------------------------------------
 class DashboardWindow(QWidget):
-    def __init__(self, username="TestUser", on_logout=None):
+    def __init__(self, username="TestUser", on_logout=None, user_id=None):
         super().__init__()
 
-        self.username = username                     # Speichert den Benutzernamen
-        self.on_logout = on_logout                   # Callback-Funktion für Logout
-        self.trans_window = None                     # Platzhalter für Transaktionsfenster
+        self.username = username
+        self.user_id = user_id
+        self.on_logout = on_logout
+        self.wallet_id = None
 
         # Fenster Setup
-        self.setWindowTitle("CoinTrol – Dashboard")  # Titel des Fensters
-        self.resize(1280, 800)                       # Fenstergröße setzen
+        self.setWindowTitle("CoinTrol – Dashboard")
+        self.resize(1280, 800)
 
-        # Hintergrundfarbe
         palette = self.palette()
-        palette.setColor(QPalette.ColorRole.Window, QColor("#262626"))  # Hintergrundfarbe
+        palette.setColor(QPalette.ColorRole.Window, QColor("#262626"))
         self.setPalette(palette)
 
-        SIDEBAR_BG = "#1E1F26"   # Sidebar-Farbe
-        CARD_BG = "#3A3A42"      # Kartenfarbe im Dashboard
+        SIDEBAR_BG = "#1E1F26"
+        CARD_BG = "#3A3A42"
 
         # ---------------------------------------------------
         # HAUPTLAYOUT
         # ---------------------------------------------------
-        main_layout = QHBoxLayout(self)              # Horizontaler Aufbau: Sidebar links, Content rechts
-        main_layout.setContentsMargins(10, 10, 10, 10)  # Außenabstand des Layouts
-        main_layout.setSpacing(15)                      # Abstand zwischen Sidebar und Content
+        main_layout = QHBoxLayout(self)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(15)
 
         # ---------------------------------------------------
         # SIDEBAR
         # ---------------------------------------------------
-        sidebar = QFrame()                            # Linker Container für Navigation
-        sidebar.setFixedWidth(240)                    # Sidebar Breite
-        sidebar.setStyleSheet(f"background-color: {SIDEBAR_BG}; border-radius: 14px;")  # Sidebar-Design
+        sidebar = QFrame()
+        sidebar.setFixedWidth(240)
+        sidebar.setStyleSheet(f"background-color: {SIDEBAR_BG}; border-radius: 14px;")
 
-        side_layout = QVBoxLayout(sidebar)            # Vertikales Layout für Sidebar
+        side_layout = QVBoxLayout(sidebar)
         side_layout.setContentsMargins(20, 20, 20, 20)
         side_layout.setSpacing(40)
 
-        title = QLabel("CoinTrol")                    # Überschrift
-        title.setFont(QFont("Arial", 36, QFont.Weight.Bold))  # Schriftgröße
+        title = QLabel("CoinTrol")
+        title.setFont(QFont("Arial", 36, QFont.Weight.Bold))
         title.setStyleSheet("color: white;")
         side_layout.addWidget(title)
 
-        user_label = QLabel(f"Angemeldet als:\n{username}")   # Benutzerinfo
+        user_label = QLabel(f"Angemeldet als:\n{username}")
         user_label.setFont(QFont("Arial", 16))
         user_label.setStyleSheet("color: #CFCFCF;")
         side_layout.addWidget(user_label)
+        side_layout.addSpacing(20)
 
-        side_layout.addSpacing(20)                    # Extra Abstand
-
-        # --------------------------------------------------------
-        # BUTTON-MAPPING
-        # --------------------------------------------------------
+        # BUTTONS
         buttons = {
-            "Dashboard": None,                        # Kein Click-Event
-            "Transaktionen": self.open_transactions,  # Öffnet Transaktionsfenster
-            "Wallets": self.open_wallet,              # Öffnet Walletfenster
+            "Dashboard": None,
+            "Transaktionen": self.open_transactions,
+            "Wallets": self.open_wallet,
         }
 
-        for name, action in buttons.items():          # Jede Schaltfläche erzeugen
+        for name, action in buttons.items():
             btn = QPushButton(name)
-            btn.setFixedHeight(65)                    # Einheitliche Höhe
+            btn.setFixedHeight(65)
             btn.setStyleSheet("""
                 QPushButton {
                     background-color: #2E2E36;
@@ -84,13 +92,13 @@ class DashboardWindow(QWidget):
                     background-color: #3A3A48;
                 }
             """)
-            if action is not None:                    # Click-Event nur wenn vorhanden
+            if action:
                 btn.clicked.connect(action)
             side_layout.addWidget(btn)
 
-        side_layout.addStretch()                      # Füllt verbleibenden Platz
+        side_layout.addStretch()
 
-        logout_btn = QPushButton("Logout")            # Logout Button
+        logout_btn = QPushButton("Logout")
         logout_btn.setFixedHeight(45)
         logout_btn.setStyleSheet("""
             QPushButton {
@@ -103,55 +111,117 @@ class DashboardWindow(QWidget):
                 background-color: #D64242;
             }
         """)
-        logout_btn.clicked.connect(self.logout)       # Logout Event
+        logout_btn.clicked.connect(self.logout)
         side_layout.addWidget(logout_btn)
 
-        main_layout.addWidget(sidebar)                # Sidebar in Hauptlayout einsetzen
+        main_layout.addWidget(sidebar)
 
         # ---------------------------------------------------
-        # CONTENT-BEREICH
+        # CONTENT-BEREICH MIT VERTIKALEM SCROLLEN
         # ---------------------------------------------------
-        content = QFrame()                            # Rechter Content-Bereich
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll_area.setStyleSheet("""
+            QScrollArea {
+                border: none;
+                background-color: transparent;
+            }
+            QScrollBar:vertical {
+                background: #1E1F26;
+                width: 10px;
+                margin: 4px 0 4px 0;
+                border-radius: 5px;
+            }
+            QScrollBar::handle:vertical {
+                background: #5B5CF0;
+                border-radius: 5px;
+                min-height: 25px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #7678FF;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0;
+            }
+        """)
+
+        # Innerer Content
+        content = QWidget()
         content.setStyleSheet("background-color: #2B2B2B; border-radius: 18px;")
 
-        content_layout = QVBoxLayout(content)         # Vertikale Anordnung des Inhalts
-        content_layout.setContentsMargins(30, 30, 30, 30)
-        content_layout.setSpacing(20)
+        self.content_layout = QVBoxLayout(content)
+        self.content_layout.setContentsMargins(30, 30, 30, 30)
+        self.content_layout.setSpacing(20)
 
-        # HEADER
-        header = QLabel("Dashboard Übersicht")        # Überschrift für Content
+        header = QLabel("Dashboard Übersicht")
         header.setFont(QFont("Arial", 34, QFont.Weight.Bold))
         header.setStyleSheet("color: white;")
         header.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        content_layout.addWidget(header)
+        self.content_layout.addWidget(header)
 
-        # STATISTIK-KARTEN
-        grid = QGridLayout()                          # Rasterlayout für drei Karten
+        # Daten laden
+        self.load_dashboard(CARD_BG)
+
+        scroll_area.setWidget(content)
+        main_layout.addWidget(scroll_area)
+
+    # ------------------------------------------------------------
+    # LADEN DER WALLET- UND TRANSAKTIONSDATEN
+    # ------------------------------------------------------------
+    def load_dashboard(self, CARD_BG):
+        """Lädt Daten des eingeloggten Benutzers aus MongoDB"""
+        if not self.user_id:
+            print("[Dashboard Fehler] Keine User-ID übergeben.")
+            return
+
+        wallets = get_wallets_by_user(self.user_id)
+        if not wallets:
+            print("[Dashboard] Kein Wallet gefunden → Erstelle 'Main Wallet'")
+            wallet_id = create_wallet(self.user_id, "Main Wallet", 0.0)
+            self.wallet_id = wallet_id
+            balance = 0.0
+            transactions = []
+        else:
+            main_wallet = wallets[0]
+            self.wallet_id = str(main_wallet["_id"])
+            balance = calculate_wallet_balance(self.wallet_id)
+            transactions = get_transactions_by_wallet(self.wallet_id)
+
+        # Überschrift mit Kontostand
+        welcome = QLabel(f"Willkommen, {self.username} – aktueller Kontostand: {balance:.2f} €")
+        welcome.setFont(QFont("Arial", 18))
+        welcome.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        welcome.setStyleSheet("color: #CCCCCC; margin-top: 10px; margin-bottom: 20px;")
+        self.content_layout.addWidget(welcome)
+
+        # Karten (Kontostand, Ausgaben, Einnahmen)
+        grid = QGridLayout()
         grid.setSpacing(20)
 
+        expenses = sum(abs(t["amount"]) for t in transactions if t["amount"] < 0)
+        income = sum(t["amount"] for t in transactions if t["amount"] > 0)
+
         cards = [
-            ("Kontostand", "30,00 €"),
-            ("Monatsausgaben", "91,40 €"),
-            ("Einnahmen", "120,00 €"),
+            ("Kontostand", f"{balance:.2f} €"),
+            ("Monatsausgaben", f"{expenses:.2f} €"),
+            ("Einnahmen", f"{income:.2f} €"),
         ]
 
-        for i, (title_text, value_text) in enumerate(cards):  # Jede Karte erzeugen
-             # enumerate liefert den Index (i) und das Element (Titel, Wert) jeder Karte
+        for i, (title_text, value_text) in enumerate(cards):
             card = QFrame()
-            card.setStyleSheet(f"""
-                background-color: {CARD_BG};
-                border-radius: 18px;
-            """)
+            card.setStyleSheet(f"background-color: {CARD_BG}; border-radius: 18px;")
             card_layout = QVBoxLayout(card)
             card_layout.setSpacing(5)
             card_layout.setContentsMargins(20, 20, 20, 20)
 
-            t = QLabel(title_text)                   # Titel der Karte
+            t = QLabel(title_text)
             t.setFont(QFont("Arial", 22))
             t.setStyleSheet("color: #D0D0D0;")
             t.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
-            v = QLabel(value_text)                   # Wert der Karte
+            v = QLabel(value_text)
             v.setFont(QFont("Arial", 42, QFont.Weight.Bold))
             v.setStyleSheet("color: white;")
             v.setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -159,56 +229,70 @@ class DashboardWindow(QWidget):
             card_layout.addWidget(t)
             card_layout.addWidget(v)
 
-            grid.addWidget(card, 0, i)               # Reihen 0, Spalten 0–2
+            grid.addWidget(card, 0, i)
 
-        content_layout.addLayout(grid)
+        self.content_layout.addLayout(grid)
 
-        # LETZTE AKTIVITÄTEN
-        info_card = QFrame()                          # Rahmen für Aktivitätenliste
-        info_card.setStyleSheet(f"background-color: {CARD_BG}; border-radius: 18px;") # CARD_BG ist die zuvor definierte Hintergrundfarbe für Karten (z. B. #3A3A42)
-
+        # Letzte Aktivitäten
+        info_card = QFrame()
+        info_card.setStyleSheet(f"background-color: {CARD_BG}; border-radius: 18px;")
         info_layout = QVBoxLayout(info_card)
         info_layout.setContentsMargins(25, 25, 25, 25)
 
-        header2 = QLabel("Letzte Aktivitäten")        # Titel Liste
+        header2 = QLabel("Letzte Aktivitäten")
         header2.setFont(QFont("Arial", 26, QFont.Weight.Bold))
         header2.setStyleSheet("color: white;")
         info_layout.addWidget(header2)
 
-        activities = QLabel("• 15 € – McDonalds\n• 8 € – Öffi Ticket\n• 120 € – Gehalt")
+        if transactions:
+            last_5 = transactions[-5:]
+            text_lines = [
+                f"• {t['amount']:.2f} € – {t.get('description', 'Keine Beschreibung')}"
+                for t in reversed(last_5)
+            ]
+            activities_text = "\n".join(text_lines)
+        else:
+            activities_text = "Keine Transaktionen vorhanden."
+
+        activities = QLabel(activities_text)
         activities.setFont(QFont("Arial", 20))
         activities.setStyleSheet("color: #DDDDDD;")
         info_layout.addWidget(activities)
 
-        content_layout.addWidget(info_card)
-
-        main_layout.addWidget(content)                 # Content ins Hauptlayout
+        self.content_layout.addWidget(info_card)
 
     # ------------------------------------------------------------
-    # TRANSAKTIONS-FENSTER ÖFFNEN
+    # TRANSAKTIONSFENSTER
     # ------------------------------------------------------------
     def open_transactions(self):
-        self.trans_window = TransactionWindow()        # Neue Instanz des Transaktionsfensters
-        self.trans_window.show()                       # Fenster anzeigen
+        if not self.wallet_id:
+            print("[Fehler] Keine Wallet-ID übergeben – kann Transaktionsfenster nicht öffnen.")
+            return
+        self.trans_window = TransactionWindow(wallet_id=self.wallet_id, dashboard_ref=self)
+        self.trans_window.show()
 
+    # ------------------------------------------------------------
+    # WALLET-FENSTER
+    # ------------------------------------------------------------
     def open_wallet(self):
-        self.wallet_window = WalletsWindow()           # Neue Instanz des Wallet-Fensters
-        self.wallet_window.show()                      # Fenster anzeigen
+        self.wallet_window = WalletsWindow()
+        self.wallet_window.show()
 
     # ------------------------------------------------------------
     # LOGOUT
     # ------------------------------------------------------------
     def logout(self):
-        if self.on_logout:                             # Callback nur ausführen, wenn vorhanden
+        if self.on_logout:
             self.on_logout()
-        self.close()                                   # Fenster schließen
+        self.close()
 
 
 # ------------------------------------------------------------
-# Direktstart für Tests
+# TESTSTART
 # ------------------------------------------------------------
 if __name__ == "__main__":
-    app = QApplication(sys.argv)                      # PyQt App starten
-    win = DashboardWindow("TestUser")                 # Dashboard erstellen
-    win.show()                                        # Anzeigen
-    sys.exit(app.exec())                              # Eventloop starten
+    app = QApplication(sys.argv)
+    test_user_id = "674ff8b16e7b59e0c0b57d82"
+    win = DashboardWindow(username="kingivan", user_id=test_user_id)
+    win.show()
+    sys.exit(app.exec())

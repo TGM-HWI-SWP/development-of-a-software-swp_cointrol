@@ -1,137 +1,169 @@
-from PyQt6.QtWidgets import (         # Import der GUI-Elemente (Widgets, Layouts, Frames)
-    QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame,
-    QApplication, QScrollArea
+from PyQt6.QtWidgets import (
+    QWidget, QLabel, QVBoxLayout, QFrame, QApplication, QScrollArea, QPushButton, QHBoxLayout, QMessageBox
 )
-from PyQt6.QtGui import QFont, QColor, QPalette   # Import für Schriftarten, Farben, Paletten
-from PyQt6.QtCore import Qt                       # Import allgemeiner Qt-Funktionen/Flags
-import sys                                         # Für Systemargumente (z. B. sys.argv)
+from PyQt6.QtGui import QFont, QColor, QPalette
+from PyQt6.QtCore import Qt
+import sys
 
-
-
+# ------------------------------------------------------------
+# IMPORTS AUS DEM MODEL
+# ------------------------------------------------------------
+from coin_trol.model.db_interface import (
+    get_wallets_by_user,
+    calculate_wallet_balance,
+    create_wallet,
+)
+# ------------------------------------------------------------
+# WALLET-FENSTER
+# ------------------------------------------------------------
 class WalletsWindow(QWidget):
-    def __init__(self, transactions=None):
+    def __init__(self, user_id=None):
         super().__init__()
 
-        # Liste der Transaktionen übernehmen
-        # Falls keine übergeben wird → leere Liste verwenden
-        self.transactions = transactions if transactions else []
-
-        # Fenster-Einstellungen
+        self.user_id = user_id
         self.setWindowTitle("CoinTrol – Wallets")
         self.resize(1100, 700)
 
-        # Hintergrundfarbe des Fensters setzen (dunkles Theme)
         palette = self.palette()
         palette.setColor(QPalette.ColorRole.Window, QColor("#1C1C1E"))
         self.setPalette(palette)
 
-        # Hauptlayout (vertikal)
         main = QVBoxLayout(self)
-        main.setContentsMargins(30, 30, 30, 30)   # Abstand zum Rand
-        main.setSpacing(25)                       # Abstand zwischen Elementen
+        main.setContentsMargins(30, 30, 30, 30)
+        main.setSpacing(25)
 
-        # Titel-Label
+        # Titel
         title = QLabel("Wallet Übersicht")
-        title.setFont(QFont("Arial", 36, QFont.Weight.Bold))    # große Schrift
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)         # zentriert
-        title.setStyleSheet("color: #FFFFFF;")                   # weißer Text
+        title.setFont(QFont("Arial", 36, QFont.Weight.Bold))
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setStyleSheet("color: #FFFFFF;")
         main.addWidget(title)
 
         # Untertitel
-        subtitle = QLabel("Alle bisherigen Transaktionen")
+        subtitle = QLabel("Alle deine Wallets und aktuellen Kontostände")
         subtitle.setFont(QFont("Arial", 18))
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         subtitle.setStyleSheet("color: #BBBBBB; margin-bottom: 10px;")
         main.addWidget(subtitle)
 
-        # ScrollArea, damit viele Einträge scrollbar angezeigt werden
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)             # Inhalt passt sich an
-        scroll.setStyleSheet("border: none;")       # keine Umrandung
-        main.addWidget(scroll)
+        # Scrollbereich
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setStyleSheet("border: none;")
+        main.addWidget(self.scroll)
 
-        # Inhalt der ScrollArea
         content = QWidget()
-        scroll.setWidget(content)
+        self.scroll.setWidget(content)
 
-        # Layout für die Transaktionsliste
         self.list_layout = QVBoxLayout(content)
         self.list_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self.list_layout.setSpacing(15)             # Abstand zwischen Karten
+        self.list_layout.setSpacing(15)
 
-        # Daten reinladen
-        self.load_transactions()
+        # Add Wallet Button
+        add_wallet_btn = QPushButton("Neues Wallet erstellen")
+        add_wallet_btn.setFixedHeight(50)
+        add_wallet_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #5B5CF0;
+                color: white;
+                font-size: 18px;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #6D6EFA;
+            }
+        """)
+        add_wallet_btn.clicked.connect(self.add_wallet)
+        main.addWidget(add_wallet_btn)
 
+        # Daten laden
+        self.load_wallets()
 
     # ------------------------------------------------------------
-    # Transaktions-Liste anzeigen
+    # WALLETS LADEN
     # ------------------------------------------------------------
-    def load_transactions(self):
-        # Wenn keine Transaktionen vorhanden sind → Hinweis anzeigen
-        if not self.transactions:
-            label = QLabel("Keine Transaktionen vorhanden")
-            label.setFont(QFont("Arial", 24, QFont.Weight.Bold))
-            label.setStyleSheet("color: #888888; margin-top: 40px;")
+    def load_wallets(self):
+        # Alte Widgets entfernen
+        for i in reversed(range(self.list_layout.count())):
+            self.list_layout.itemAt(i).widget().deleteLater()
+
+        if not self.user_id:
+            label = QLabel("Fehler: Keine User-ID übergeben.")
+            label.setFont(QFont("Arial", 18, QFont.Weight.Bold))
+            label.setStyleSheet("color: red; margin-top: 40px;")
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.list_layout.addWidget(label)
             return
 
-        # Für jede Transaktion eine „Karte“ erzeugen
-        for t in self.transactions:
+        wallets = get_wallets_by_user(self.user_id)
+        if not wallets:
+            info = QLabel("Du hast noch keine Wallets.")
+            info.setFont(QFont("Arial", 20))
+            info.setStyleSheet("color: #AAAAAA; margin-top: 30px;")
+            info.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.list_layout.addWidget(info)
+            return
 
-            # Container-Frame (Karte)
+        # Wallets durchgehen
+        for w in wallets:
             card = QFrame()
             card.setStyleSheet("""
                 QFrame {
-                    background-color: #2C2C2E;    /* dunkle Karte */
-                    border-radius: 16px;           /* abgerundete Ecken */
+                    background-color: #2C2C2E;
+                    border-radius: 16px;
                 }
             """)
+            layout = QHBoxLayout(card)
+            layout.setContentsMargins(25, 20, 25, 20)
+            layout.setSpacing(20)
 
-            # Layout für die Karte
-            card_layout = QVBoxLayout(card)
-            card_layout.setContentsMargins(20, 18, 20, 18)   # Innenabstand
-            card_layout.setSpacing(6)                        # Abstand innen
+            name = w.get("name", "Unbekanntes Wallet")
+            currency = w.get("currency", "EUR")
+            wallet_id = str(w["_id"])
 
-            # Betrag + Währung
-            # :.2f → zwei Dezimalstellen
-            amount_lbl = QLabel(f"{t['amount']:.2f} {t['currency']}")
-            amount_lbl.setFont(QFont("Arial Black", 28))     # sehr groß
-            amount_lbl.setStyleSheet("color: #FFFFFF;")
-            card_layout.addWidget(amount_lbl)
+            # Kontostand neu berechnen
+            balance = calculate_wallet_balance(wallet_id)
 
-            # Kategorie / Zweck (z. B. Lebensmittel, Transport)
-            purpose_lbl = QLabel(f"Zweck: {t['purpose']}")
-            purpose_lbl.setFont(QFont("Arial", 18))
-            purpose_lbl.setStyleSheet("color: #7B87F9;")      # Akzentfarbe
-            card_layout.addWidget(purpose_lbl)
+            name_lbl = QLabel(name)
+            name_lbl.setFont(QFont("Arial Black", 26))
+            name_lbl.setStyleSheet("color: white;")
+            layout.addWidget(name_lbl, 2)
 
-            # Beschreibung (z. B. „McDonalds“)
-            desc_lbl = QLabel(t["description"])
-            desc_lbl.setFont(QFont("Arial", 16))
-            desc_lbl.setStyleSheet("color: #DDDDDD;")
-            card_layout.addWidget(desc_lbl)
+            balance_lbl = QLabel(f"{balance:.2f} {currency}")
+            balance_lbl.setFont(QFont("Arial", 24))
+            balance_lbl.setStyleSheet("color: #7B87F9;")
+            layout.addWidget(balance_lbl, 1)
 
-            # Karte ins Listenlayout
+            id_lbl = QLabel(f"ID: {wallet_id}")
+            id_lbl.setFont(QFont("Arial", 14))
+            id_lbl.setStyleSheet("color: #888888;")
+            layout.addWidget(id_lbl, 2)
+
             self.list_layout.addWidget(card)
 
+    # ------------------------------------------------------------
+    # WALLET HINZUFÜGEN
+    # ------------------------------------------------------------
+    def add_wallet(self):
+        if not self.user_id:
+            QMessageBox.critical(self, "Fehler", "Keine Benutzer-ID übergeben.")
+            return
+
+        new_name = f"Wallet {len(get_wallets_by_user(self.user_id)) + 1}"
+        try:
+            create_wallet(self.user_id, new_name, 0.0)
+            QMessageBox.information(self, "Erfolg", f"{new_name} wurde erstellt!")
+            self.load_wallets()
+        except Exception as e:
+            QMessageBox.critical(self, "Fehler", f"Wallet konnte nicht erstellt werden:\n{e}")
 
 
 # ------------------------------------------------------------
-# Start (für Test)
+# TESTSTART
 # ------------------------------------------------------------
 if __name__ == "__main__":
-    # Beispiel-Daten zum Testen
-    example_data = [
-        {"amount": 15.30, "currency": "EUR", "description": "McDonalds", "purpose": "Lebensmittel"},
-        {"amount": 8.00, "currency": "EUR", "description": "Öffi Ticket", "purpose": "Transport"},
-        {"amount": 120.00, "currency": "EUR", "description": "Gehalt", "purpose": "Einnahmen"},
-        {"amount": 8.00, "currency": "EUR", "description": "Öffi Ticket", "purpose": "Transport"},
-        {"amount": 120.00, "currency": "EUR", "description": "Gehalt", "purpose": "Einnahmen"},
-    ]
-
-    # App starten
-    app = QApplication(sys.argv)          # PyQt-Anwendung starten (muss immer zuerst ausgeführt werden)
-    win = WalletsWindow(example_data)     # Hauptfenster erzeugen
-    win.show()                            # Fenster sichtbar machen
-    sys.exit(app.exec())                  # Event-Loop starten und Programm sauber beenden
+    app = QApplication(sys.argv)
+    test_user_id = "674ff8b16e7b59e0c0b57d82"  # Beispiel-ID aus DB
+    win = WalletsWindow(user_id=test_user_id)
+    win.show()
+    sys.exit(app.exec())

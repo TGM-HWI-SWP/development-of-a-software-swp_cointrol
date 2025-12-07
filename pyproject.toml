@@ -1,23 +1,28 @@
 [project]
-name = "myapp"
-version = "0.1.0"
-authors = [{ name = "istrainovic", email = "istrainovic@student.tgm.ac.at" }]
-requires-python = ">=3.11"
-description = "A sample project"
+name = "coin_trol"
+version = "1.0.0"
+description = "Finanzverwaltungssoftware CoinTrol – HTL TGM SWP Projekt"
+authors = [
+    { name = "istrainovic", email = "istrainovic@student.tgm.ac.at" },
+    { name = "Team CoinTrol", email = "team@student.tgm.ac.at" }
+]
+requires-python = ">=3.10"
 readme = "README.md"
+
 dependencies = [
-    "pydantic>=2.0",
-    "gradio>=4.0"
+    "PyQt6>=6.6.0",
+    "pymongo>=4.6.0",
+    "python-dotenv>=1.0.0"
 ]
 
 [project.optional-dependencies]
-# Optional groups (e.g. dev tools)
+# Entwicklungswerkzeuge
 dev = [
-    "mypy>=1.0",
-    "build>=1.2",
-    "pyinstaller>=6.0",
     "black>=23.0",
-    "ruff>=0.0",
+    "ruff>=0.1",
+    "mypy>=1.6",
+    "build>=1.2",
+    "pyinstaller>=6.0"
 ]
 
 [build-system]
@@ -26,27 +31,30 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["myapp*"]  # optional but nice
+include = ["coin_trol*"]
 
 [tool.setuptools.package-data]
-"myapp" = ["py.typed"]
+"coin_trol" = ["py.typed"]
 
 [tool.setuptools]
 include-package-data = true
 
 [tool.black]
-line-length = 120
+line-length = 100
 target-version = ["py310"]
 include = "\\.pyi?$"
 
 [tool.ruff]
-line-length = 120
-select = ["E", "F", "W", "C", "Q"]
-exclude = ["__pycache__", "build", "dist"]
+line-length = 100
+select = ["E", "F", "W"]
+exclude = ["__pycache__", "build", "dist", ".venv"]
 
 [tool.mypy]
-files = ["src/myapp"]
+files = ["src/coin_trol"]
 mypy_path = "src"
 explicit_package_bases = true
 check_untyped_defs = true
-python_version = "3.11"
+python_version = "3.10"
+
+[project.scripts]
+coin_trol = "coin_trol.main:main"

@@ -1,0 +1,21 @@
+# ======================================================
+# CoinTrol – SWP Projekt 2025
+# HTL Wien XX | Klasse 4AHWII
+# Entwickelt von: Ivan Strainovic, Aleksej Pancika, Gabriel Rajkovic
+# ======================================================
+
+# --- Kern-Abhängigkeiten ---
+PyQt6>=6.6.0
+pymongo>=4.6.0
+python-dotenv>=1.0.0
+
+# --- Entwicklungswerkzeuge (optional) ---
+black>=23.0
+ruff>=0.1
+mypy>=1.6
+build>=1.2
+pyinstaller>=6.0
+
+# --- Systemkompatibilität ---
+# Für UTF-8 und Pfadkompatibilität
+pathlib

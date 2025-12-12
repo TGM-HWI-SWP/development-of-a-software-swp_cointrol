@@ -275,8 +275,12 @@ class DashboardWindow(QWidget):
     # WALLET-FENSTER
     # ------------------------------------------------------------
     def open_wallet(self):
-        self.wallet_window = WalletsWindow()
+        if not self.user_id:
+            print("[Fehler] Keine User-ID - kann Wallets-Fenster nicht öffnen.")
+            return
+        self.wallet_window = WalletsWindow(user_id=self.user_id)
         self.wallet_window.show()
+
 
     # ------------------------------------------------------------
     # LOGOUT

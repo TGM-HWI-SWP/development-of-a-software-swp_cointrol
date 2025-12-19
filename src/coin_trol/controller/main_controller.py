@@ -1,6 +1,6 @@
 # main_controller.py
-# -------------------
-# Verbindet VIEW (ui_login/ui_dashboard) mit dem MODEL (database)
+# ------------------
+# Verbindet VIEW mit MODEL (Database)
 
 from model.database import (
     get_all_users,
@@ -9,59 +9,56 @@ from model.database import (
     calculate_wallet_balance,
 )
 
-
-# ---------------------------------------------------------
+# --------------------------------------------------------
 # Login-Controller
-# ---------------------------------------------------------
+# --------------------------------------------------------
 
 def login(username: str, password: str) -> int:
     """
-    Simuliert ein Login, indem geprüft wird,
-    ob ein Benutzer mit dem Namen existiert.
-    Für das MVP keine Passwortprüfung.
+    Prüft, ob ein Benutzer mit dem Namen existiert.
+    Passwort wird im MVP ignoriert.
     """
     users = get_all_users()
 
-    for u in users:
-        if u.name.lower() == username.lower():
-            print(f"[Controller] Login OK für User: {u.name}")
-            return u.user_id
+    for user in users:
+        if user.name.lower() == username.lower():
+            print("[Controller] Login erfolgreich:", user.name)
+            return user.user_id
 
-    print("[Controller] Login fehlgeschlagen!")
+    print("[Controller] Login fehlgeschlagen")
     return -1
 
 
-# ---------------------------------------------------------
+# --------------------------------------------------------
 # Dashboard-Controller
-# ---------------------------------------------------------
+# --------------------------------------------------------
 
 def get_user_balance(user_id: int) -> float:
     """
-    Berechnet die Summe aller Wallet-Balances eines Users.
+    Gibt das Gesamtguthaben aller Wallets eines Users zurück.
     """
     wallets = get_wallets_by_user(user_id)
-    total = 0.0
+    balance = 0.0
 
-    for w in wallets:
-        total += calculate_wallet_balance(w.wallet_id)
+    for wallet in wallets:
+        balance += calculate_wallet_balance(wallet.wallet_id)
 
-    return total
+    return balance
 
 
-def get_wallet_details(user_id: int):
+def get_wallet_details(user_id: int) -> list:
     """
-    Liefert alle Wallets + Transaktionen eines Users zurück.
+    Gibt alle Wallets inkl. Transaktionen und Kontostand zurück.
     """
     wallets = get_wallets_by_user(user_id)
-    data = []
+    result = []
 
-    for w in wallets:
-        transactions = get_transactions_by_wallet(w.wallet_id)
-        wallet_info = {
-            "wallet": w,
-            "transactions": transactions,
-            "balance": calculate_wallet_balance(w.wallet_id)
+    for wallet in wallets:
+        wallet_data = {
+            "wallet": wallet,
+            "transactions": get_transactions_by_wallet(wallet.wallet_id),
+            "balance": calculate_wallet_balance(wallet.wallet_id)
         }
-        data.append(wallet_info)
+        result.append(wallet_data)
 
-    return data
+    return result

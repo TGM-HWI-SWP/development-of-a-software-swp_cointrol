@@ -13,9 +13,9 @@ from coin_trol.view.ui_login import LoginWindow
 from coin_trol.view.ui_dashboard import DashboardWindow
 
 
-# ------------------------------------------------------------
+
 # HAUPTANWENDUNG
-# ------------------------------------------------------------
+
 class CoinTrolApp:
     def __init__(self):
         self.app = QApplication(sys.argv)
@@ -51,9 +51,9 @@ class CoinTrolApp:
         sys.exit(self.app.exec())
 
 
-# ------------------------------------------------------------
+
 # PROGRAMMSTART
-# ------------------------------------------------------------
+
 if __name__ == "__main__":
     app = CoinTrolApp()
     app.run()

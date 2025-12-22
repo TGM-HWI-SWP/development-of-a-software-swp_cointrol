@@ -1,231 +1,172 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/cqMTK5D_)
 [![Open in Visual Studio Code](https://classroom.github.com/assets/open-in-vscode-2e0aaae1b6195c2367325f4f02e2d04e9abb55f0b24a779b69b11b9e10269abc.svg)](https://classroom.github.com/online_ide?assignment_repo_id=21267486&assignment_repo_type=AssignmentRepo)
-CoinTrol – Intelligenter Finanz- und Ausgabenmanager
 
-Projektzeitraum: Oktober – Dezember 2025
-Schule: HTL TGM Wien – Abteilung Informatik
-Fach: SWP (Softwareentwicklung & Projektmanagement)
-Klasse: 4BHWII
-Team:
+---
 
-Ivan Strainovic – Model / Datenbank / MongoDB
+#  CoinTrol – SWP Projekt 2025  
+**Team:** Ivan Strainovic, Aleksej Pancika, Gabriel  
+**Klasse:** 4BHWII – HTL Wien XX
 
-Aleksej pancika – Controller / Businesslogik
+---
 
-Gabriel Rajkovic – View / GUI / Integration & Design
+##  Week 1 – Projektstart
 
-1. Projektbeschreibung
+**Ziele:**
+- Projektmanagement aufsetzen (PSP, Zeitplanung, Rollen)
+- Rollen definieren:  
+  - Ivan → Model/DB  
+  - Aleksej → Controller/Businesslogik  
+  - Gabriel → View/UI
+- Ordnerstruktur, Git-Repository, `.gitignore` und README anlegen
 
-CoinTrol ist ein Python-basiertes Softwareprojekt zur Verwaltung persönlicher Finanzen.
-Ziel ist die Entwicklung einer modernen, datenbankgestützten Desktop-Anwendung im MVC-Architekturmodell (Model-View-Controller).
-Die App erlaubt Benutzern, Einnahmen und Ausgaben zu erfassen, mehrere Wallets zu verwalten und den Gesamtstatus ihrer Finanzen zu überwachen.
+**Ergebnis:**
+- Repository erstellt und mit GitHub Classroom verbunden  
+- Virtuelle Umgebung (`.venv`) aktiviert  
+- Projektstruktur aufgebaut:
+src/
+└─ coin_trol/
+├─ model/
+├─ controller/
+├─ view/
+├─ utils/
+└─ tests/
 
-Die Anwendung nutzt eine MongoDB-Datenbank (Atlas/Compass) zur persistenten Speicherung von Benutzern, Wallets und Transaktionen,
-eine grafische Benutzeroberfläche (GUI) in PyQt6, und eine saubere Controller-Schicht,
-die Datenvalidierung und Geschäftslogik kapselt.
+markdown
+Code kopieren
+- Rollen- und Zeitplanung abgeschlossen  
 
-2. Projektziele
+---
 
-Aufbau eines vollständigen MVC-Systems mit klarer Trennung der Schichten
+##  Week 2 – Model Layer (Ivan)
 
-Professionelle PyQt6-GUI mit responsivem Dark-Mode
+**Verantwortlich:** Ivan  
+**Ziel:** Aufbau der Datenstruktur und Definition der Schnittstellen zwischen Model, Controller und View.
 
-MongoDB-Anbindung über ein modulares Interface
+###  Struktur
+- `src/coin_trol/model/entities.py` → Enthält die Klassen:
+- **User** – repräsentiert einen Benutzer  
+- **Wallet** – repräsentiert ein Konto / eine Geldbörse  
+- **Transaction** – repräsentiert einzelne Transaktionen (Einnahmen/Ausgaben)
+- `src/coin_trol/model/database.py` → Enthält Dummy-Daten und Schnittstellenfunktionen
 
-CRUD-Funktionalitäten (Create, Read, Update, Delete) für Wallets & Transaktionen
+###  Wichtige Funktionen
+| Funktion | Parameter | Rückgabe | Beschreibung |
+|-----------|------------|-----------|---------------|
+| `get_all_users()` | – | `list[User]` | Gibt alle Benutzer zurück |
+| `get_wallets_by_user(user_id)` | `int` | `list[Wallet]` | Holt alle Wallets eines Benutzers |
+| `get_transactions_by_wallet(wallet_id)` | `int` | `list[Transaction]` | Holt alle Transaktionen eines Wallets |
+| `add_transaction(wallet_id, amount, category, description)` | `int, float, str, str` | `Transaction` | Fügt eine neue Transaktion hinzu |
+| `calculate_wallet_balance(wallet_id)` | `int` | `float` | Berechnet aktuellen Kontostand eines Wallets |
 
-Automatische Saldenberechnung je Wallet und Gesamtbalance
+###  Testen
+```bash
+python src/coin_trol/main.py
+Schnittstellenanalyse
+Ivan: Model & Schnittstellen
 
-Dokumentierte Codebasis mit Type-Hints, Docstrings, Inline-Kommentaren
+Aleksej: Steuerlogik (Controller)
 
-GitHub-Versionierung mit Branch-Strategie und klarer Aufgabenaufteilung
+Gabriel: Darstellung (View)
 
-PEP8-Styleguide-konformer Code mit mypy & ruff überprüft
+Ergebnis:
+Grundlegende MVC-Struktur und Schnittstellen stehen.
 
-Abgabe eines stabilen MVPs (Minimum Viable Product) inkl. README & Installationsanleitung
+Week 3 – Coding Guidelines & Integration
+Ziele:
 
-3. Architekturüberblick (MVC-Pattern)
-Model        ->  Datenbank (MongoDB), Entities, DB-Interface
-Controller   ->  Logik, Schnittstelle zwischen View und Model
-View         ->  GUI in PyQt6 (Login, Dashboard, Wallets, Transaktionen)
+Styleguide (PEP8 + Docstrings) erstellt
 
-Model (Ivan Strainovic)
+Einheitliche Namenskonventionen und Typannotationen
 
-Verwaltung der Datenstrukturen (entities.py)
+helpers.py erweitert
 
-Dummy-Datenbank & MongoDB-Interface (database.py, db_interface.py)
+Controller-Anbindung vorbereitet
 
-CRUD-Funktionen (create, read, update, delete)
+Erste MVP-Komponenten getestet
 
-Verbindung zu MongoDB über .env Datei
+Styleguide
+Einheitliche Sprache: Englisch im Code, Kommentare Deutsch
 
-Implementierung von Fehlerbehandlung und Datenvalidierung
+Klassen in PascalCase, Funktionen in snake_case, Konstanten in ALL_CAPS
 
-Controller (Aleksej pancika)
+Docstring-Format: Google-Style
 
-Verbindung zwischen Model und View
+4 Leerzeichen Einrückung, max. 100 Zeichen pro Zeile
 
-Überprüfung von Eingaben, Steuerung der Logik
+Ergebnis
+Model vollständig mit Controller verbunden, liefert Daten an View.
+Styleguide.md angelegt.
+pytest-Tests erfolgreich.
 
-Übergabe von Daten an die GUI
+Week 4 – MVP-Komponenten entwickeln
+Verantwortlich:
 
-Methoden zur Login-Prüfung, Transaktionssteuerung, Wallet-Update
+Ivan → Model / JSON-Datenhaltung / CRUD
 
-View (Gabriel Rajkovic)
+Aleksej → Controller / Use-Cases / Logik
 
-Gestaltung der grafischen Benutzeroberfläche mit PyQt6
+Gabriel → View / GUI-Formulare / Interaktion
 
-Aufbau der Fenster: Login, Dashboard, Wallet-Übersicht, Transaktionen
+Ziele
+Model-CRUD-Funktionen (Create, Read, Update, Delete) implementieren
 
-Einheitliches Farbdesign (Dark Mode mit Akzentfarbe #5B5CF0)
+Controller-Use-Cases zur Datenweitergabe zwischen Model ↔ View entwickeln
 
-Umsetzung von Statusleisten statt Pop-up-Meldungen
+View (UI) mit einfachen Formularen (Login, Dashboard) aufbauen
 
-Scrollbare Layouts, moderne Typografie, intuitive Navigation
+Erste Integrationstests mit Dummy-Daten durchführen
 
-4. Projektstruktur
+Ivan (Model)
+Dummy-Daten erweitert in database.py
 
-CoinTrol/
-│
-├── coin_trol/
-│   ├── model/
-│   │   ├── entities.py
-│   │   ├── database.py
-│   │   └── db_interface.py
-│   ├── controller/
-│   │   └── main_controller.py
-│   └── view/
-│       ├── ui_login.py
-│       ├── ui_dashboard.py
-│       ├── Wallets.py
-│       └── Transaktion.py
-│
-├── tests/
-│   ├── test_model.py
-│   ├── test_controller.py
-│   └── test_view.py
-│
-├── .env.example
-├── requirements.txt
-├── pyproject.toml
-├── README.md
-└── main.py
+db_interface.py für JSON-Persistenz implementiert
 
-5. Funktionen
-Bereich	Funktion	Beschreibung
-Login / Registrierung	Benutzeranmeldung & Erstellung neuer Konten	Passwortvalidierung & DB-Speicherung
-Dashboard	Übersicht aller Finanzen	Gesamtbalance, Monatsausgaben, Einnahmen
-Wallets	Mehrere Konten pro Benutzer	Automatische Saldenberechnung
-Transaktionen	Einnahmen/Ausgaben verwalten	CRUD-Funktionen + Kategorisierung
-Statusleiste	Rückmeldungen ohne Pop-ups	Benutzerfreundliche Fehleranzeige
-Dark-Mode Design	Einheitliche Farbpalette	#1E1F26 Hintergrund, #5B5CF0 Akzent
-Scrollbare Layouts	Bessere Übersicht bei vielen Elementen	ScrollArea in Dashboard & Transaktionen
+Neue Funktionen:
 
-6. Installation & Ausführung
-Voraussetzungen
+persist_data()
 
-Python 3.11 oder höher
+create_wallet()
 
-MongoDB Compass oder MongoDB Atlas-Konto
+update_wallet_balance()
 
-Virtuelle Umgebung (.venv) aktiv
+delete_transaction()
 
-Setup-Schritte
-# 1. Repository klonen
-git clone https://github.com/<team>/CoinTrol.git
-cd CoinTrol
+Erweiterte Tests (test_model.py)
 
-# 2. Virtuelle Umgebung erstellen
-python -m venv .venv
-# Aktivieren
-.venv\Scripts\activate  # Windows
-source .venv/bin/activate  # Linux/Mac
+helpers.py für Lookup-Funktionen ergänzt
 
-# 3. Abhängigkeiten installieren
-pip install -r requirements.txt
+Aleksej (Controller)
+Verbindung zwischen View und Model hergestellt
 
-# 4. .env-Datei erstellen (Beispiel)
-MONGO_URI=mongodb+srv://istrainovic:Cointrol1@cointrol.fcises4.mongodb.net/?appName=CoinTrol
-DB_NAME=CoinTrol
+Implementierung zentraler Use-Cases (add_transaction, get_balance, login_user)
 
-# 5. Starten
-python main.py
+Logikprüfung und Fehlerbehandlung integriert
 
-7. Verbindung zu MongoDB
+Gabriel (View)
+Aufbau der Dummy-GUI (Login und Dashboard)
 
-Die Verbindung erfolgt über die Datei .env (nicht im Repo enthalten).
+Anpassung an Controller-Schnittstellen
 
-Beispiel:
+Erste GUI-Tests mit Dummy-Daten
 
-MONGO_URI=mongodb+srv://istrainovic:Cointrol1@cointrol.fcises4.mongodb.net/?appName=CoinTrol
+main.py – MVP-Durchstich
+Enthält den Testablauf von Login → Controller → Model → View
 
+Simuliert Benutzer-Login, Wallet-Auswahl, Transaktionsverarbeitung und Balance-Berechnung
 
-Die Collections:
+Dient als Integrationstest für alle Schichten
 
-users → Benutzerkonten
+🧪 Testen
+bash
+Code kopieren
+pytest src/coin_trol/tests/
+python src/coin_trol/main.py
+✅ Ergebnis
+Funktionaler Durchstich: Eingabe → Controller → Model → Anzeige
 
-wallets → Einzelne Geldbörsen
+CRUD-Operationen laufen fehlerfrei
 
-transactions → Transaktionen (Einnahmen/Ausgaben)
+JSON-Datei wird nach Änderungen aktualisiert
 
-8. Qualitätssicherung
-
-Code Style: PEP8, geprüft mit ruff
-
-Typing: vollständige Typannotationen, geprüft mit mypy
-
-Tests: pytest für Controller- & Model-Tests
-
-Dokumentation: Docstrings nach Google-Style
-
-Versionierung: Branch-basiertes Git-Workflow (keine Direktcommits auf main)
-
-Commit-Politik: viele kleine, sinnvolle Commits (pro Feature oder Datei)
-
-Merge Reviews: durch Teammitglied, um Fehler zu vermeiden
-
-9. Git-Workflow
-
-Jeder arbeitet auf eigenem Branch (feature/gui, feature/db, controller_logic, etc.)
-
-Änderungen werden lokal getestet
-
-Commits enthalten klare Messages (z. B. “Added MongoDB CRUD base”)
-
-Merge in integration/mvp_final
-
-Nach erfolgreichem Test → Merge in main
-
-Nur getestete, lauffähige Versionen auf main
-
-10. Nutzung von KI & Tools
-
-Zur Unterstützung während der Entwicklung wurden folgende Tools eingesetzt:
-
-Tool	Zweck
-ChatGPT (GPT-5)	Codeoptimierung, Refactoring, Kommentierung, Doku
-GitHub Copilot	Vorschläge bei GUI-Layouts
-MongoDB Compass	Testen von Queries
-VS Code	Hauptentwicklungsumgebung
-mypy / pytest / ruff	Typprüfung, Tests, Codequalität
-
-11. Erweiterungsideen (Future Work)
-
-Export als PDF / CSV
-
-Filter & Suchfunktionen
-
-Mehrsprachige UI
-
-Diagramme (Matplotlib)
-
-Passwort-Hashing (bcrypt)
-
-Benutzer-Avatar & Themes
-
-12. Lizenz & Urheberrecht
-
-© 2025 HTL TGM Wien – Abteilung Wirtschaftsingineurwesen
-Verwendung ausschließlich für Bildungszwecke.
-Lizenz: MIT License
+Alle Schichten arbeiten zusammen
 

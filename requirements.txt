@@ -1,6 +1,6 @@
 # ======================================================
 # CoinTrol – SWP Projekt 2025
-# HTL Wien XX | Klasse 4ABWII
+# HTL Wien XX | Klasse 4BHWII
 # Entwickelt von: Ivan Strainovic, Aleksej Pancika, Gabriel Rajkovic
 # ======================================================
 # Projektbeschreibung:

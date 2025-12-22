@@ -1,39 +1,55 @@
+# ======================================================
+# CoinTrol – .gitignore
+# HTL Wien XX | 4BHWII | SWP Projekt 2025
+# ======================================================
+# Ignoriert Build-Dateien, Cache, Umgebungen und vertrauliche Daten
+# ======================================================
+
 # ---- Python ----
 __pycache__/
 *.py[cod]
 *$py.class
+__pypackages__/
 
-# ---- Virtual Environment ----
+# ---- Virtuelle Umgebung ----
 .venv/
 venv/
 env/
 
-# ---- Logs & Temp Files ----
+# ---- Logs & Temporäre Dateien ----
 *.log
 *.tmp
 *.bak
+*.swp
 
-# ---- VS Code ----
+# ---- IDEs & Editor ----
 .vscode/
 .settings/
+.idea/
+*.sublime-workspace
+*.sublime-project
 
 # ---- Build / Distribution ----
 build/
 dist/
 *.egg-info/
+*.spec                # PyInstaller build files
 
-# ---- OS Files ----
+# ---- Betriebssystem ----
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# ---- Test Cache ----
+# ---- Tests & Coverage ----
 .pytest_cache/
 .coverage
 htmlcov/
 
-# ---- Environment & Secrets ----
+# ---- Umgebungsvariablen & Secrets ----
 .env
 .env.local
+.env.*.backup
 
-__pycache__/
-.vscode/
+# ---- Lokale Notizen oder Dateien ----
+notes.txt
+todo.txt

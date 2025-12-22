@@ -1,26 +1,31 @@
 [project]
 name = "coin_trol"
 version = "1.0.0"
-description = "Finanzverwaltungssoftware CoinTrol – HTL TGM SWP Projekt"
+description = "CoinTrol – Intelligente Finanzverwaltungssoftware (HTL TGM SWP Projekt 2025)"
 authors = [
-    { name = "istrainovic", email = "istrainovic@student.tgm.ac.at" },
-    { name = "Team CoinTrol", email = "team@student.tgm.ac.at" }
+    { name = "Ivan Strainovic", email = "istrainovic@student.tgm.ac.at" },
+    { name = "Aleksej Panicka", email = "apanicka@student.tgm.ac.at" },
+    { name = "Gabriel Rajkovic", email = "grajkovic@student.tgm.ac.at" }
 ]
 requires-python = ">=3.10"
 readme = "README.md"
+license = { text = "MIT" }
 
 dependencies = [
     "PyQt6>=6.6.0",
     "pymongo>=4.6.0",
-    "python-dotenv>=1.0.0"
+    "python-dotenv>=1.0.0",
+    "typing-extensions>=4.9.0"
 ]
 
 [project.optional-dependencies]
-# Entwicklungswerkzeuge
+# Entwicklungs- und Build-Tools
 dev = [
     "black>=23.0",
     "ruff>=0.1",
     "mypy>=1.6",
+    "pytest>=7.4",
+    "types-pymongo",
     "build>=1.2",
     "pyinstaller>=6.0"
 ]
@@ -46,7 +51,8 @@ include = "\\.pyi?$"
 
 [tool.ruff]
 line-length = 100
-select = ["E", "F", "W"]
+select = ["E", "F", "W", "C90"]
+ignore = ["E501"]
 exclude = ["__pycache__", "build", "dist", ".venv"]
 
 [tool.mypy]
@@ -54,6 +60,7 @@ files = ["src/coin_trol"]
 mypy_path = "src"
 explicit_package_bases = true
 check_untyped_defs = true
+disallow_untyped_defs = false
 python_version = "3.10"
 
 [project.scripts]

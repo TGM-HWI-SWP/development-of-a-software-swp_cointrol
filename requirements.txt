@@ -1,21 +1,28 @@
 # ======================================================
 # CoinTrol – SWP Projekt 2025
-# HTL Wien XX | Klasse 4AHWII
+# HTL Wien XX | Klasse 4ABWII
 # Entwickelt von: Ivan Strainovic, Aleksej Pancika, Gabriel Rajkovic
+# ======================================================
+# Projektbeschreibung:
+# CoinTrol ist eine Finanzverwaltungssoftware zur Erfassung von Einnahmen und Ausgaben.
+# Entwickelt im Rahmen des Softwareprojekts (SWP) an der HTL TGM Wien, Klasse 4BHWII.
+# Architektur: MVC (Model - View - Controller)
 # ======================================================
 
 # --- Kern-Abhängigkeiten ---
-PyQt6>=6.6.0
-pymongo>=4.6.0
-python-dotenv>=1.0.0
+PyQt6>=6.6.0              # GUI-Framework
+pymongo>=4.6.0            # MongoDB-Anbindung
+python-dotenv>=1.0.0      # Laden von .env-Dateien (z. B. DB-Verbindung)
+typing-extensions>=4.9.0  # Zusätzliche Typdefinitionen für ältere Python-Versionen
 
-# --- Entwicklungswerkzeuge (optional) ---
-black>=23.0
-ruff>=0.1
-mypy>=1.6
-build>=1.2
-pyinstaller>=6.0
+# --- Entwicklungswerkzeuge (optional, für Codequalität & Build) ---
+black>=23.0               # Code Formatter
+ruff>=0.1                 # Linter / Syntaxprüfung
+mypy>=1.6                 # Typprüfung
+pytest>=7.4               # Test-Framework
+types-pymongo             # Typing-Unterstützung für pymongo
+build>=1.2                # Packaging & Distribution
+pyinstaller>=6.0          # Erstellung von ausführbaren Dateien (.exe)
 
-# --- Systemkompatibilität ---
-# Für UTF-8 und Pfadkompatibilität
-pathlib
+# --- Systemkompatibilität & Utilities ---
+pathlib                   # Pfadverwaltung (Standardbibliothek, nur dokumentarisch)

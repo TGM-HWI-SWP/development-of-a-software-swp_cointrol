@@ -12,19 +12,16 @@ einfacher Python-Listen vor.
 Styleguide: PEP 8, Google-Style Docstrings
 """
 
-# -------------------------------------------------------------
+
 # BENÖTIGTE IMPORTS
-# -------------------------------------------------------------
 from datetime import datetime  # für Zeitstempel in Transaktionen
 from .entities import User, Wallet, Transaction  # Import eigener Klassen (Model-Ebene)
 
-# ===================================================================
-# DUMMY-DATEN (werden zur Laufzeit im RAM gehalten, keine DB-Verbindung)
-# ===================================================================
 
-# -------------------------------------------------------------
+# DUMMY-DATEN (werden zur Laufzeit im RAM gehalten, keine DB-Verbindung)
+
 # BENUTZER (User)
-# -------------------------------------------------------------
+
 # Diese Liste simuliert eine Tabelle mit Benutzerkonten.
 # Jeder User hat eine ID, einen Namen und eine E-Mail-Adresse.
 USERS: list[User] = [
@@ -33,9 +30,9 @@ USERS: list[User] = [
     User(3, "Aleksej", "aleksej@cointrol.at"),  # Benutzer 3
 ]
 
-# -------------------------------------------------------------
+
 # WALLETS (Konten)
-# -------------------------------------------------------------
+
 # Diese Liste repräsentiert alle vorhandenen Wallets.
 # Jedes Wallet gehört genau einem Benutzer (user_id) und hat ein Startguthaben.
 WALLETS: list[Wallet] = [
@@ -44,9 +41,9 @@ WALLETS: list[Wallet] = [
     Wallet(3, 3, "Aleksej Wallet", 120.25),    # Wallet von Aleksej
 ]
 
-# -------------------------------------------------------------
+
 # TRANSAKTIONEN
-# -------------------------------------------------------------
+
 # Diese Liste simuliert alle Bewegungen auf den Wallets.
 # Positive Werte = Einnahmen, Negative Werte = Ausgaben.
 TRANSACTIONS: list[Transaction] = [
@@ -61,11 +58,8 @@ TRANSACTIONS: list[Transaction] = [
 # → Diese Daten werden beim Start automatisch in den Speicher geladen.
 # → Es gibt keinen persistenten Speicher (alles verschwindet beim Beenden).
 
-# ===================================================================
+
 # STUB-FUNKTIONEN (Platzhalter für zukünftige Datenbankabfragen)
-# ===================================================================
-
-
 def get_all_users() -> list[User]:
     """
     Gibt alle Benutzer aus der Dummy-Datenbank zurück.
@@ -167,9 +161,8 @@ def calculate_wallet_balance(wallet_id: int) -> float:
     return total_balance
 
 
-# ===================================================================
+
 # HAUPTTEST (nur für lokale Ausführung)
-# ===================================================================
 if __name__ == "__main__":
     # Dieser Block wird nur ausgeführt, wenn das Skript direkt gestartet wird
     # (nicht beim Import in anderen Modulen).

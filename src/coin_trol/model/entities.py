@@ -15,15 +15,13 @@ Enthaltene Klassen:
 Styleguide: PEP 8, Google-Style Docstrings
 """
 
-# ------------------------------------------------------------
+
 # BENÖTIGTE IMPORTS
-# ------------------------------------------------------------
 from datetime import datetime  # für Zeitstempel in User- und Transaktionsobjekten
 
 
-# ============================================================
+
 # KLASSE: USER
-# ============================================================
 class User:
     """
     Repräsentiert einen Benutzer im CoinTrol-System.
@@ -71,9 +69,8 @@ class User:
         return f"User(id={self.user_id}, name='{self.name}', email='{self.email}')"
 
 
-# ============================================================
+
 # KLASSE: WALLET
-# ============================================================
 class Wallet:
     """
     Repräsentiert ein Wallet (Konto) eines Benutzers.
@@ -125,9 +122,8 @@ class Wallet:
         return f"Wallet('{self.name}', {self.balance:.2f} {self.currency})"
 
 
-# ============================================================
+
 # KLASSE: TRANSACTION
-# ============================================================
 class Transaction:
     """
     Repräsentiert eine einzelne Transaktion (Geldbewegung) innerhalb eines Wallets.

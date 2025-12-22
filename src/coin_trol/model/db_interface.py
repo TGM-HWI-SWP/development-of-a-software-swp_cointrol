@@ -12,9 +12,8 @@ Es enthält:
 Alle Funktionen arbeiten mit PyMongo und ObjectId-Strukturen.
 """
 
-# ============================================================
+
 # BENÖTIGTE IMPORTS
-# ============================================================
 from pymongo import MongoClient           # Hauptklasse für MongoDB-Verbindung
 from dotenv import load_dotenv            # Zum Laden von Umgebungsvariablen (.env)
 from datetime import datetime             # Für Zeitstempel
@@ -22,9 +21,8 @@ from pathlib import Path                  # Zum sicheren Pfadhandling (.env-Such
 from bson import ObjectId                 # Zum Umgang mit MongoDB-Objekt-IDs
 import os                                # Zugriff auf Umgebungsvariablen (os.getenv)
 
-# ============================================================
+
 # KONFIGURATION & VERBINDUNG
-# ============================================================
 
 # Pfad zur .env-Datei bestimmen (3 Ordner über diesem Modul)
 env_path = Path(__file__).resolve().parents[3] / ".env"
@@ -40,9 +38,9 @@ DB_NAME = os.getenv("DB_NAME")      # Name der zu verwendenden Datenbank
 db = None
 client = None
 
-# ------------------------------------------------------------
+
 # Verbindung zur MongoDB-Datenbank herstellen
-# ------------------------------------------------------------
+
 try:
     # Prüfen, ob Variablen korrekt geladen wurden
     if not MONGO_URI or not DB_NAME:
@@ -65,9 +63,8 @@ except Exception as e:
     print(f"[DB-Fehler] Verbindung fehlgeschlagen: {e}")
     db = None  # Verhindert Folgefehler, falls db nicht erreichbar ist
 
-# ------------------------------------------------------------
+
 # Collections definieren (wie Tabellen in relationalen DBs)
-# ------------------------------------------------------------
 if db is not None:
     users_col = db["users"]              # Benutzer
     wallets_col = db["wallets"]          # Wallets
@@ -77,10 +74,8 @@ else:
     users_col = wallets_col = transactions_col = None
 
 
-# ============================================================
-# CREATE – Datensätze anlegen
-# ============================================================
 
+# CREATE – Datensätze anlegen
 def create_user(name: str, email: str, password: str = "1234") -> str:
     """
     Erstellt einen neuen Benutzer in der Datenbank und legt automatisch ein Standard-Wallet an.
@@ -185,10 +180,8 @@ def add_transaction(wallet_id: str, amount: float, category: str, description: s
     return str(result.inserted_id)
 
 
-# ============================================================
-# READ – Daten lesen
-# ============================================================
 
+# READ – Daten lesen
 def calculate_wallet_balance(wallet_id: str) -> float:
     """
     Berechnet den aktuellen Kontostand eines Wallets und aktualisiert diesen in der Datenbank.
@@ -270,10 +263,8 @@ def get_transactions_by_wallet(wallet_id: str):
     return list(transactions_col.find({"wallet_id": wallet_id}))
 
 
-# ============================================================
-# UPDATE – bestehende Datensätze anpassen
-# ============================================================
 
+# UPDATE – bestehende Datensätze anpassen
 def update_wallet_balance(wallet_id: str) -> float:
     """
     Aktualisiert den Kontostand eines Wallets basierend auf allen Transaktionen.
@@ -312,10 +303,8 @@ def update_wallet_balance(wallet_id: str) -> float:
         return 0.0
 
 
-# ============================================================
-# DELETE – Datensätze löschen
-# ============================================================
 
+# DELETE – Datensätze löschen
 def delete_transaction(transaction_id: str) -> bool:
     """
     Löscht eine Transaktion aus der Datenbank und aktualisiert danach den Wallet-Kontostand.
